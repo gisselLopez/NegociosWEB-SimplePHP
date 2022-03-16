@@ -1,5 +1,5 @@
 <?php
-namespace Controllers\Mnt\Categorias;
+namespace Controllers\Orm;
 
 use Controllers\PublicController;
 use Views\Renderer;
@@ -7,14 +7,39 @@ use Views\Renderer;
    
 class Parameters extends PublicController
 {
-  
+    private   $viewData = array();
+
     public function run(): void
     {
-        $viewData = array();
-         /* la varibale la extraer de informacion del Modelo de datos */
-        $viewData["categorias"]
-            = \Dao\Mnt\Categorias::obtenerTodos();
-        Renderer::render('orm/parameters', $viewData);
+        if($this->isPostBack())
+        {
+            \Utilities\ArrUtils::mergeFullArrayTo($_POST,
+            $this->viewData);
+             $this->viewData["tableData"]=
+             \Dao\Orm\TableDescribe::obtenerEstructuraDeTabla
+             ($this->viewData["table"]);
+             generateListController();
+             print_r($this->viewData["tableData"]);
+             die();
+        }
+        Renderer::render("orm/parameters", $this->viewData);
+    }
+
+    private function generateListController()
+    {
+        $buffer  =array();
+        $buffer[] ='<?php';
+        $buffer[] = sprintf('namespace \Controller\%s;', $this->viewData["namespace"]);
+        $buffer[] = 'use Controllers\PublicController;';
+        $buffer[] = 'use Views\Renderer;';
+        $buffer[] =sprintf('class $ss extends PublicController {',$this->viewData["entity"]);
+        foreach ($this->viewData['tableData'] as $field){
+            $buffer[] = sprintf(' private $_%s', $field['Field']);
+        }
+        $buffer[] = '}';
+        $buffer[] = '?>';
+        
+        $this->viewData["listController"]=htmlspecialchars(implode("\n", $buffer));
     }
 }
 
